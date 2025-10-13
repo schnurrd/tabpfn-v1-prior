@@ -14,7 +14,7 @@ import torch
 from torch.utils.data import DataLoader
 
 # Import TabPFN priors - these should be copied to the priors/ subdirectory
-from . import priors
+import priors
 
 
 class TabPFNPriorDataLoader(DataLoader):

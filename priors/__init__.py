@@ -10,9 +10,3 @@ This module contains all the TabPFN prior implementations:
 """
 
 from . import fast_gp, mlp, flexible_categorical, differentiable_prior, prior_bag
-
-# Import fast_gp_mix if it exists
-try:
-    from . import fast_gp_mix
-except ImportError:
-    fast_gp_mix = None
