@@ -13,8 +13,8 @@ from typing import Dict, Union, Optional
 import torch
 from torch.utils.data import DataLoader
 
-# Import TabPFN priors - these should be copied to the priors/ subdirectory
-import priors
+# Import TabPFN priors 
+from . import priors
 
 
 class TabPFNPriorDataLoader(DataLoader):

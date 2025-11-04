@@ -202,18 +202,23 @@ Each batch contains:
 
 ```
 tabpfn-v1-prior/
-├── __init__.py                 # Package initialization
-├── tabpfn_prior.py            # Main prior dataloader implementation
-├── README.md                  # This file
-└── priors/                    # TabPFN prior implementations
-    ├── __init__.py
-    ├── mlp.py                 # MLP prior
-    ├── fast_gp.py             # GP prior
-    ├── flexible_categorical.py # Categorical data handling
-    ├── differentiable_prior.py # Differentiable hyperparameters
-    ├── prior_bag.py           # Prior combination
-    ├── utils.py               # Utility functions
-    └── prior.py               # Base classes
+│
+├── tabpfn_prior/
+│   ├── __init__.py
+│   ├── tabpfn_prior.py
+│   ├── test_standalone.py
+│   └── priors/
+│       ├── __init__.py
+│       ├── differentiable_prior.py
+│       ├── fast_gp.py
+│       ├── flexible_caterogical.py
+│       ├── mlp.py
+│       ├── prior.py
+│       ├── prior_bag.py
+│       └── utils.py
+│
+├── README.md
+└── pyproject.toml
 ```
 
 ## Examples

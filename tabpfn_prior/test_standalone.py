@@ -2,7 +2,7 @@
 """Test script for the standalone TabPFN v1 Prior package."""
 
 import torch
-from tabpfn_prior import build_tabpfn_prior
+from tabpfn_prior.tabpfn_prior import build_tabpfn_prior
 
 
 def test_standalone_package():
