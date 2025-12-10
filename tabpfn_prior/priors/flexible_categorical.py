@@ -15,12 +15,14 @@ time_it = False
 class BatchResult(tuple):
     """A tuple subclass that can carry optional metadata like categorical_mask.
     
-    Behaves exactly like a tuple for unpacking: x, y, y_ = batch_result
+    Behaves exactly like a tuple for unpacking: x, y, y_ = batch_result or x, y, y_, extra = batch_result
     But also allows accessing: batch_result.categorical_mask (if set)
     """
-    def __new__(cls, x, y, y_, categorical_mask=None):
-        instance = super().__new__(cls, (x, y, y_))
+    def __new__(cls, *args, categorical_mask=None, **kwargs):
+        instance = super().__new__(cls, args)
         instance.categorical_mask = categorical_mask
+        for key, value in kwargs.items():
+            setattr(instance, key, value)
         return instance
 
 class BalancedBinarize(nn.Module):

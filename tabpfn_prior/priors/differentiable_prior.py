@@ -4,6 +4,7 @@ import math
 
 from .utils import get_batch_to_dataloader, default_device, normalize_by_used_features_f
 from .utils import order_by_y
+from .flexible_categorical import BatchResult
 
 from .utils import trunc_norm_sampler_f, beta_sampler_f, gamma_sampler_f, uniform_sampler_f, zipf_sampler_f, scaled_beta_sampler_f, uniform_int_sampler_f
 
@@ -215,9 +216,9 @@ class DifferentiablePrior(torch.nn.Module):
         sampled_hyperparameters_passed, sampled_hyperparameters_indicators = self.differentiable_hyperparameters.sample_parameter_object()
 
         hyperparameters = {**self.h, **sampled_hyperparameters_passed}
-        x, y, y_ = self.get_batch(hyperparameters=hyperparameters, **self.args)
+        batch_result = self.get_batch(hyperparameters=hyperparameters, **self.args)
 
-        return x, y, y_, sampled_hyperparameters_indicators
+        return batch_result[0], batch_result[1], batch_result[2], sampled_hyperparameters_indicators, batch_result
 
 
 # TODO: Make this a class that keeps objects
@@ -225,6 +226,7 @@ class DifferentiablePrior(torch.nn.Module):
 def get_batch(batch_size, seq_len, num_features, get_batch
               , device=default_device, differentiable_hyperparameters={}
               , hyperparameters=None, batch_size_per_gp_sample=None, **kwargs):
+    
     batch_size_per_gp_sample = batch_size_per_gp_sample or (min(64, batch_size))
     num_models = batch_size // batch_size_per_gp_sample
     assert num_models * batch_size_per_gp_sample == batch_size, f'Batch size ({batch_size}) not divisible by batch_size_per_gp_sample ({batch_size_per_gp_sample})'
@@ -235,7 +237,7 @@ def get_batch(batch_size, seq_len, num_features, get_batch
     models = [DifferentiablePrior(get_batch, hyperparameters, differentiable_hyperparameters, args) for _ in range(num_models)]
     sample = sum([[model()] for model in models], [])
 
-    x, y, y_, hyperparameter_dict = zip(*sample)
+    x, y, y_, hyperparameter_dict, batch_results = zip(*sample)
 
     if 'verbose' in hyperparameters and hyperparameters['verbose']:
         print('Hparams', hyperparameter_dict[0].keys())
@@ -254,10 +256,12 @@ def get_batch(batch_size, seq_len, num_features, get_batch
     else:
         packed_hyperparameters = None
 
-    x, y, y_, packed_hyperparameters = (torch.cat(x, 1).detach()
-                                        , torch.cat(y, 1).detach()
-                                        , torch.cat(y_, 1).detach()
-                                        , packed_hyperparameters)#list(itertools.chain.from_iterable(itertools.repeat(x, batch_size_per_gp_sample) for x in packed_hyperparameters)))#torch.repeat_interleave(torch.stack(packed_hyperparameters, 0).detach(), repeats=batch_size_per_gp_sample, dim=0))
+    x, y, y_ = torch.cat(x, 1).detach(), torch.cat(y, 1).detach(), torch.cat(y_, 1).detach()
+    
+    if batch_results and hasattr(batch_results[0], 'categorical_mask'):
+        categorical_mask = torch.cat([br.categorical_mask.unsqueeze(0).repeat(batch_size_per_gp_sample, 1) for br in batch_results], dim=0)
+        return BatchResult(x, y, y_, (packed_hyperparameters if hyperparameters.get('differentiable_hps_as_style', True) else None), categorical_mask=categorical_mask)
+    
     return x, y, y_, (packed_hyperparameters if hyperparameters.get('differentiable_hps_as_style', True) else None)
 
 DataLoader = get_batch_to_dataloader(get_batch)
