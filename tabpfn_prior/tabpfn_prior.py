@@ -34,6 +34,8 @@ class TabPFNPriorDataLoader(DataLoader):
         prior_config (dict, optional): Configuration for the prior hyperparameters.
         flexible (bool): Whether to use flexible categorical encoding.
         differentiable (bool): Whether to use differentiable hyperparameters.
+        return_categorical_mask (bool): Whether to return categorical feature mask.
+        nan_handling (bool): Whether to enable NaN handling in differentiable hyperparameters.
         **kwargs: Additional arguments passed to the prior.
     """
     
@@ -50,6 +52,7 @@ class TabPFNPriorDataLoader(DataLoader):
         flexible: bool = True,
         differentiable: bool = False,
         return_categorical_mask: bool = False,
+        nan_handling: bool = True,
         **kwargs
     ):
         self.prior_type = prior_type
@@ -62,6 +65,7 @@ class TabPFNPriorDataLoader(DataLoader):
         self.flexible = flexible
         self.differentiable = differentiable
         self.return_categorical_mask = return_categorical_mask
+        self.nan_handling = nan_handling
         
         self.config = self._get_default_config()
             
@@ -126,6 +130,7 @@ class TabPFNPriorDataLoader(DataLoader):
             'nan_prob_no_reason': 0.0,
             'nan_prob_unknown_reason': 0.0,
             'nan_prob_a_reason': 0.0,
+            'nan_prob_unknown_reason_reason_prior': 0.0,
             'set_value_to_nan': 0.0,
             'normalize_to_ranking': False,
             'noise_type': "Gaussian",
@@ -281,7 +286,8 @@ class TabPFNPriorDataLoader(DataLoader):
         flex_keys = [
             'seq_len_used', 'num_features_used', 'balanced', 'max_num_classes', 'num_classes',
             'categorical_feature_p', 'nan_prob_no_reason', 'nan_prob_unknown_reason', 
-            'nan_prob_a_reason', 'set_value_to_nan', 'normalize_to_ranking', 'noise_type',
+            'nan_prob_a_reason', 'nan_prob_unknown_reason_reason_prior', 'set_value_to_nan', 
+            'missing_values', 'normalize_to_ranking', 'noise_type',
             'output_multiclass_ordered_p', 'multiclass_type', 'normalize_labels',
             'check_is_compatible', 'rotate_normalized_labels', 'normalize_by_used_features',
             'emsize'
@@ -331,13 +337,18 @@ class TabPFNPriorDataLoader(DataLoader):
                 'output_multiclass_ordered_p': {'distribution': 'uniform', 'min': 0.0, 'max': 0.5},
                 'multiclass_type': {'distribution': 'meta_choice', 'choice_values': ['value', 'rank']},
                 'categorical_feature_p': {'distribution': 'meta_beta', 'scale': 1.0, 'min': 0.5, 'max': 3.0},
+                'normalize_to_ranking': {'distribution': 'meta_choice', 'choice_values': [True, False]},
+            })
+            
+        if self.nan_handling:
+            diff_hyperparameters.update({
                 'nan_prob_no_reason': {'distribution': 'uniform', 'min': 0.0, 'max': 0.5},
                 'nan_prob_a_reason': {'distribution': 'uniform', 'min': 0.0, 'max': 0.5},
                 'nan_prob_unknown_reason': {'distribution': 'uniform', 'min': 0.0, 'max': 0.5},
+                'nan_prob_unknown_reason_reason_prior': {'distribution': 'uniform', 'min': 0.0, 'max': 1.0},
                 'set_value_to_nan': {'distribution': 'meta_choice', 'choice_values': [0.0, 1.0, 2.0]},
-                'normalize_to_ranking': {'distribution': 'meta_choice', 'choice_values': [True, False]},
             })
-        
+    
         # Prior bag specific parameters
         if self.prior_type == 'prior_bag':
             diff_hyperparameters.update({
@@ -417,6 +428,7 @@ def build_tabpfn_prior(
     flexible: bool = True,
     differentiable: bool = False,
     return_categorical_mask: bool = False,
+    nan_handling: bool = True,
     **kwargs
 ) -> TabPFNPriorDataLoader:
     """Build a TabPFN prior dataloader with the specified configuration.
@@ -435,6 +447,7 @@ def build_tabpfn_prior(
         return_categorical_mask (bool): If True and flexible=True, batches include
             'categorical_mask' key with boolean tensor [num_features] indicating
             which features are categorical (default: False).
+        nan_handling (bool): Whether to enable NaN handling in differentiable hyperparameters.
         **kwargs: Additional arguments.
         
     Returns:
@@ -454,5 +467,6 @@ def build_tabpfn_prior(
         flexible=flexible,
         differentiable=differentiable,
         return_categorical_mask=return_categorical_mask,
+        nan_handling=nan_handling,
         **kwargs
     )
