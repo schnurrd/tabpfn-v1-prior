@@ -279,8 +279,12 @@ def get_batch(batch_size, seq_len, num_features, get_batch, device, hyperparamet
     x, y, y_ = zip(*sample)
     x, y, y_ = torch.cat(x, 1).detach(), torch.cat(y, 1).detach(), torch.cat(y_, 1).detach()
 
+    # Stack categorical masks: [num_models, num_features]
+    # Each model generates batch_size_per_gp_sample samples, so we need to repeat each mask
     categorical_masks = [s.categorical_mask for s in sample]
-    categorical_mask = torch.stack(categorical_masks, dim=0)
+    # Repeat each mask for the samples it generated: [batch_size, num_features]
+    categorical_mask = torch.cat([mask.unsqueeze(0).repeat(batch_size_per_gp_sample, 1) 
+                                   for mask in categorical_masks], dim=0)
     
     return BatchResult(x, y, y_, categorical_mask=categorical_mask)
 
