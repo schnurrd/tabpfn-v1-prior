@@ -259,7 +259,7 @@ def get_batch(batch_size, seq_len, num_features, get_batch
     x, y, y_ = torch.cat(x, 1).detach(), torch.cat(y, 1).detach(), torch.cat(y_, 1).detach()
     
     if batch_results and hasattr(batch_results[0], 'categorical_mask'):
-        categorical_mask = torch.cat([br.categorical_mask.unsqueeze(0).expand(batch_size_per_gp_sample, -1) for br in batch_results], dim=0)
+        categorical_mask = torch.cat([br.categorical_mask for br in batch_results], dim=0)
         return BatchResult(x, y, y_, (packed_hyperparameters if hyperparameters.get('differentiable_hps_as_style', True) else None), categorical_mask=categorical_mask)
     
     return x, y, y_, (packed_hyperparameters if hyperparameters.get('differentiable_hps_as_style', True) else None)

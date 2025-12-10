@@ -330,6 +330,12 @@ class TabPFNPriorDataLoader(DataLoader):
             diff_hyperparameters.update({
                 'output_multiclass_ordered_p': {'distribution': 'uniform', 'min': 0.0, 'max': 0.5},
                 'multiclass_type': {'distribution': 'meta_choice', 'choice_values': ['value', 'rank']},
+                'categorical_feature_p': {'distribution': 'meta_beta', 'scale': 1.0, 'min': 0.5, 'max': 3.0},
+                'nan_prob_no_reason': {'distribution': 'uniform', 'min': 0.0, 'max': 0.5},
+                'nan_prob_a_reason': {'distribution': 'uniform', 'min': 0.0, 'max': 0.5},
+                'nan_prob_unknown_reason': {'distribution': 'uniform', 'min': 0.0, 'max': 0.5},
+                'set_value_to_nan': {'distribution': 'meta_choice', 'choice_values': [0.0, 1.0, 2.0]},
+                'normalize_to_ranking': {'distribution': 'meta_choice', 'choice_values': [True, False]},
             })
         
         # Prior bag specific parameters
