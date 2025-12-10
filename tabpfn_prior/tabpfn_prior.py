@@ -49,6 +49,7 @@ class TabPFNPriorDataLoader(DataLoader):
         prior_config: dict = None,
         flexible: bool = True,
         differentiable: bool = False,
+        return_categorical_mask: bool = False,
         **kwargs
     ):
         self.prior_type = prior_type
@@ -60,6 +61,7 @@ class TabPFNPriorDataLoader(DataLoader):
         self.device = device
         self.flexible = flexible
         self.differentiable = differentiable
+        self.return_categorical_mask = return_categorical_mask
         
         self.config = self._get_default_config()
             
@@ -358,12 +360,18 @@ class TabPFNPriorDataLoader(DataLoader):
         if len(target_y.shape) == 2:
             target_y = target_y.transpose(0, 1)  # (seq_len, batch_size) -> (batch_size, seq_len)
         
-        return {
+        result = {
             'x': x.to(self.device),
             'y': y.to(self.device), 
             'target_y': target_y.to(self.device),
             'single_eval_pos': single_eval_pos
         }
+        
+        # Add categorical mask if available (from BatchResult)
+        if self.return_categorical_mask and hasattr(batch_data, 'categorical_mask'):
+            result['categorical_mask'] = batch_data.categorical_mask.to(self.device)
+        
+        return result
     
     def __iter__(self):
         """Generate batches of synthetic data."""
@@ -402,6 +410,7 @@ def build_tabpfn_prior(
     prior_config: dict = None,
     flexible: bool = True,
     differentiable: bool = False,
+    return_categorical_mask: bool = False,
     **kwargs
 ) -> TabPFNPriorDataLoader:
     """Build a TabPFN prior dataloader with the specified configuration.
@@ -417,6 +426,9 @@ def build_tabpfn_prior(
         prior_config (dict): Custom prior configuration.
         flexible (bool): Whether to use flexible categorical encoding.
         differentiable (bool): Whether to use differentiable hyperparameters.
+        return_categorical_mask (bool): If True and flexible=True, batches include
+            'categorical_mask' key with boolean tensor [num_features] indicating
+            which features are categorical (default: False).
         **kwargs: Additional arguments.
         
     Returns:
@@ -435,5 +447,6 @@ def build_tabpfn_prior(
         prior_config=prior_config,
         flexible=flexible,
         differentiable=differentiable,
+        return_categorical_mask=return_categorical_mask,
         **kwargs
     )

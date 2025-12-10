@@ -183,6 +183,7 @@ Main factory function for creating TabPFN priors.
 - `prior_config` (dict): Custom hyperparameter configuration (optional)
 - `flexible` (bool): Enable flexible categorical encoding (default: True)
 - `differentiable` (bool): Enable differentiable hyperparameters (default: False)
+- `return_categorical_mask` (bool): Return categorical feature mask when flexible=True (default: False)
 
 **Returns:**
 - `TabPFNPriorDataLoader`: Configured prior data loader
@@ -197,6 +198,7 @@ Each batch contains:
 - `y`: Labels `[batch_size, seq_len]`
 - `target_y`: Target labels (same as y) `[batch_size, seq_len]`
 - `single_eval_pos`: Evaluation position (int)
+- `categorical_mask`: Boolean tensor `[num_features]` (only when `return_categorical_mask=True`)
 
 ## File Structure
 

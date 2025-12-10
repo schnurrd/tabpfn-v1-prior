@@ -11,6 +11,18 @@ from .utils import uniform_int_sampler_f
 
 time_it = False
 
+
+class BatchResult(tuple):
+    """A tuple subclass that can carry optional metadata like categorical_mask.
+    
+    Behaves exactly like a tuple for unpacking: x, y, y_ = batch_result
+    But also allows accessing: batch_result.categorical_mask (if set)
+    """
+    def __new__(cls, x, y, y_, categorical_mask=None):
+        instance = super().__new__(cls, (x, y, y_))
+        instance.categorical_mask = categorical_mask
+        return instance
+
 class BalancedBinarize(nn.Module):
     def __init__(self):
         super().__init__()
@@ -162,6 +174,7 @@ class FlexibleCategorical(torch.nn.Module):
                     x = self.drop_for_reason(x, nan_handling_missing_for_unknown_reason_value(self.h['set_value_to_nan']))
 
         # Categorical features
+        categorical_feature_mask = torch.zeros(x.shape[2], dtype=torch.bool, device=self.args['device'])
         if 'categorical_feature_p' in self.h and random.random() < self.h['categorical_feature_p']:
             p = random.random()
             for col in range(x.shape[2]):
@@ -169,6 +182,7 @@ class FlexibleCategorical(torch.nn.Module):
                 m = MulticlassRank(num_unique_features, ordered_p=0.3)
                 if random.random() < p:
                     x[:, :, col] = m(x[:, :, col])
+                    categorical_feature_mask[col] = True
 
         if time_it:
             print('Flex Forward Block 2', round(time.time() - start, 3))
@@ -240,7 +254,9 @@ class FlexibleCategorical(torch.nn.Module):
                     random_shift = torch.randint(0, num_classes, (1,), device=self.args['device'])
                     y[valid_labels, b] = (y[valid_labels, b] + random_shift) % num_classes
 
-        return x, y, y  # x.shape = (T,B,H)
+        self.categorical_feature_mask = categorical_feature_mask
+        
+        return BatchResult(x, y, y, categorical_mask=categorical_feature_mask)
 
 import torch.cuda as cutorch
 
@@ -263,6 +279,9 @@ def get_batch(batch_size, seq_len, num_features, get_batch, device, hyperparamet
     x, y, y_ = zip(*sample)
     x, y, y_ = torch.cat(x, 1).detach(), torch.cat(y, 1).detach(), torch.cat(y_, 1).detach()
 
-    return x, y, y_
+    categorical_masks = [s.categorical_mask for s in sample]
+    categorical_mask = torch.stack(categorical_masks, dim=0)
+    
+    return BatchResult(x, y, y_, categorical_mask=categorical_mask)
 
 DataLoader = get_batch_to_dataloader(get_batch)
