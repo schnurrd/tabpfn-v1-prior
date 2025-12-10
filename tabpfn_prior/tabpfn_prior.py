@@ -428,7 +428,7 @@ def build_tabpfn_prior(
     flexible: bool = True,
     differentiable: bool = False,
     return_categorical_mask: bool = False,
-    nan_handling: bool = True,
+    nan_handling: bool = False,
     **kwargs
 ) -> TabPFNPriorDataLoader:
     """Build a TabPFN prior dataloader with the specified configuration.
