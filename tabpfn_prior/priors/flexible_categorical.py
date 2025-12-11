@@ -151,7 +151,7 @@ class FlexibleCategorical(torch.nn.Module):
         return x
 
     def drop_for_no_reason(self, x, v):
-        x[torch.rand(x.shape, device=self.args['device']) < random.random() * self.h['nan_prob_no_reason']] = v
+        x[torch.rand(x.shape, device=self.args['device']) < self.h['nan_prob_no_reason']] = v
         return x
 
     def forward(self, batch_size):
@@ -164,7 +164,7 @@ class FlexibleCategorical(torch.nn.Module):
 
         if self.h['nan_prob_no_reason']+self.h['nan_prob_a_reason']+self.h['nan_prob_unknown_reason'] > 0 and random.random() > 0.5: # Only one out of two datasets should have nans
             if random.random() < self.h['nan_prob_no_reason']: # Missing for no reason
-                x = self.drop_for_no_reason(x, nan_handling_missing_for_no_reason_value(self.h['set_value_to_nan']))
+                x = self.drop_for_no_reason(x, nan_handling_missing_for_unknown_reason_value(self.h['set_value_to_nan']))
 
             if self.h['nan_prob_a_reason'] > 0 and random.random() > 0.5: # Missing for a reason
                 x = self.drop_for_reason(x, nan_handling_missing_for_a_reason_value(self.h['set_value_to_nan']))

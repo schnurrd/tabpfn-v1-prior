@@ -131,7 +131,7 @@ class TabPFNPriorDataLoader(DataLoader):
             'nan_prob_unknown_reason': 0.0,
             'nan_prob_a_reason': 0.0,
             'nan_prob_unknown_reason_reason_prior': 0.0,
-            'set_value_to_nan': 0.0,
+            'set_value_to_nan': 1.0,  # should not do anything if nan_prob_* are 0
             'normalize_to_ranking': False,
             'noise_type': "Gaussian",
             'output_multiclass_ordered_p': 0.0,
@@ -342,11 +342,12 @@ class TabPFNPriorDataLoader(DataLoader):
             
         if self.nan_handling:
             diff_hyperparameters.update({
-                'nan_prob_no_reason': {'distribution': 'uniform', 'min': 0.0, 'max': 0.5},
-                'nan_prob_a_reason': {'distribution': 'uniform', 'min': 0.0, 'max': 0.5},
-                'nan_prob_unknown_reason': {'distribution': 'uniform', 'min': 0.0, 'max': 0.5},
-                'nan_prob_unknown_reason_reason_prior': {'distribution': 'uniform', 'min': 0.0, 'max': 1.0},
-                'set_value_to_nan': {'distribution': 'meta_choice', 'choice_values': [0.0, 1.0, 2.0]},
+                'nan_prob_no_reason': {'distribution': 'uniform', 'min': 0.0, 'max': 0.1},
+                #'nan_prob_a_reason': {'distribution': 'uniform', 'min': 0.0, 'max': 0.1},
+                #'nan_prob_unknown_reason': {'distribution': 'uniform', 'min': 0.0, 'max': 0.1},
+                #'nan_prob_unknown_reason_reason_prior': {'distribution': 'uniform', 'min': 0.0, 'max': 1.0},
+                # set_value_to_nan to be a constant 1.0
+                #'set_value_to_nan': {'distribution': 'meta_choice', 'choice_values': [1.0, 1.0]},
             })
     
         # Prior bag specific parameters
