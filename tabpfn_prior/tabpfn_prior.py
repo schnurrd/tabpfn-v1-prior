@@ -334,7 +334,7 @@ class TabPFNPriorDataLoader(DataLoader):
         # Flexible categorical differentiable parameters
         if self.flexible:
             diff_hyperparameters.update({
-                'output_multiclass_ordered_p': {'distribution': 'uniform', 'min': 0.0, 'max': 0.5},
+                'output_multiclass_ordered_p': {'distribution': 'meta_beta', 'alpha_min': 0.2, 'alpha_max': 0.9, 'beta_min': 3.5, 'beta_max': 7.0, 'scale': 1.0},
                 'multiclass_type': {'distribution': 'meta_choice', 'choice_values': ['value', 'rank']},
                 'categorical_feature_p': {'distribution': 'meta_beta', 'scale': 1.0, 'min': 0.5, 'max': 3.0},
                 'normalize_to_ranking': {'distribution': 'meta_choice', 'choice_values': [True, False]},
