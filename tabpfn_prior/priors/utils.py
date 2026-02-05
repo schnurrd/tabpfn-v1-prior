@@ -88,13 +88,51 @@ def normalize_by_used_features_f(x, num_features_used, num_features, normalize_w
         return x / (num_features_used / num_features)**(1 / 2)
     return x / (num_features_used / num_features)
 
-def to_ranking_low_mem(data):
-    x = torch.zeros_like(data)
-    for col in range(data.shape[-1]):
-        x_ = (data[:, :, col] >= data[:, :, col].unsqueeze(-2))
-        x_ = x_.sum(0)
-        x[:, :, col] = x_
-    return x
+def to_ranking_low_mem(data: torch.Tensor) -> torch.Tensor:
+    N, B, F = data.shape
+    device = data.device
+    out_dtype = data.dtype
+
+    # (N, B, F) -> (rows=B*F, N)
+    x = data.permute(1, 2, 0).reshape(-1, N)
+
+    # sort ascending
+    sv, sidx = torch.sort(x, dim=-1)
+
+    if torch.is_floating_point(sv):
+        valid = ~torch.isnan(sv)
+    else:
+        valid = None
+
+    # group starts (only within valid region)
+    ends = torch.zeros_like(sv, dtype=torch.bool)
+
+    if valid is None:
+        ends[:, :-1] = sv[:, :-1] != sv[:, 1:]
+        ends[:, -1] = True
+    else:
+        both_valid = valid[:, :-1] & valid[:, 1:]
+        ends[:, :-1] = both_valid & (sv[:, :-1] != sv[:, 1:])
+
+        last_valid = valid.long().sum(dim=1) - 1
+        has_any = last_valid >= 0
+        ends[has_any, last_valid[has_any]] = True
+
+    idx = torch.arange(N, device=device, dtype=torch.int32).unsqueeze(0).expand(sv.shape[0], -1)
+    big = torch.full_like(idx, N, dtype=torch.int32)
+    end_marker = torch.where(ends, idx, big)
+    end_pos = torch.flip(torch.cummin(torch.flip(end_marker, dims=[1]), dim=1).values, dims=[1])
+
+    ranks_sorted = (end_pos + 1).to(out_dtype)
+    if valid is not None:
+        ranks_sorted = torch.where(valid, ranks_sorted, torch.zeros(1, device=device, dtype=out_dtype))
+
+    # scatter back to original order
+    ranks_flat = torch.empty_like(x, dtype=out_dtype)
+    ranks_flat.scatter_(1, sidx, ranks_sorted)
+
+    # (rows, N) -> (N, B, F)
+    return ranks_flat.reshape(B, F, N).permute(2, 0, 1)
 
 def get_nan_value(v, set_value_to_nan=0.0):
     if random.random() < set_value_to_nan:
